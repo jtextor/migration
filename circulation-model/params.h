@@ -2,8 +2,6 @@ double RHO_INITIAL = 1./39.;
 
 double RHO_FINAL = 16./39.;
 
-const int IN_BLOOD = 0, IN_SPLEEN = 1, IN_LN = 2, IN_DLN = 3;
-
 double R_SPLEEN = 6; // hours
 double L_SPLEEN = sqrt( 6 * R_SPLEEN );
 
@@ -28,9 +26,6 @@ int SYSTEMIC = 0;
 
 int CUTOFF = 0;
 
-//double ALPHA = 0.125;
-//double GAMMA_K = 1.0;
-
 double ALPHA=0.125;
 double GAMMA_K=1.;
 
@@ -39,6 +34,7 @@ int USE_SWELLING = 0;
 int OUTPUT_ACTIVATION = 1;
 int OUTPUT_DISTRIBUTION = 0;
 int OUTPUT_TRAJECTORY = 0;
+int USE_BLOOD_ADJUST= 0;
 
 int CONSTANT_LN_TRANSIT_TIME = 0;
 

@@ -8,24 +8,13 @@
 #include "SimpleRNG.cpp"
 #include "INIReader.h"
 
-// #include "boost/random.hpp"
-// #include "boost/random/exponential_distribution.hpp"
-
 using namespace std;
 
-//boost::mt19937 rng( time(NULL) + getpid() );
 SimpleRNG rng;
-
-//boost::variate_generator< boost::mt19937&, boost::uniform_real< double > > 
-//  sampler_01( rng, boost::uniform_real<double>(0.,1.) );
 
 inline double sampler_01(){
 	return rng.GetUniform();
 }
-
-//boost::variate_generator<boost::mt19937&, 
-//   boost::normal_distribution< double > > 
-//   sampler_norm(rng, boost::normal_distribution<double>(0.0,sqrt(2.0)));
 
 inline double sampler_norm(){
 	return rng.GetNormal( 0.0, sqrt(2.0) );
@@ -33,6 +22,26 @@ inline double sampler_norm(){
 
 #include "jacobi.h"
 #include "params.h"
+
+const int IN_BLOOD = 0, IN_SPLEEN = 1, IN_LN = 2, IN_DLN = 3;
+
+double mod (double a, int b)
+{
+   int ret = fmod(a,b);
+   if(ret < 0)
+     ret+=b;
+   return ret;
+}
+
+double blood_adjust( double t ){
+	double x = mod(t,24);
+	if( x < 7 || x > 22. ){
+		return 2.0;
+	} else {
+		return 0.5;
+	}
+	//return 1.0; //mod(t,24)*(1.5+sin(2*PI*t/24));
+}
 
 double nu_t( double t ){
    double ymin = RHO_INITIAL;
@@ -50,11 +59,6 @@ double nu_t( double t ){
 }
 
 inline double s01(){
-   //double s = 0.0;
-   //while( s == 0.0 ){
-   //   s = sampler_01();
-   //}
-   //return s;
    return rng.GetUniform();
 }
 
@@ -82,19 +86,20 @@ int main( int argc, char ** argv ){
         std::cout << "Can't load 'test.ini'\n";
         return 1;
     }
+    N = reader.GetInteger("","N",N);
     CUTOFF = reader.GetInteger("","CUTOFF",CUTOFF);
 	T_MAX = reader.GetInteger("","T_MAX",T_MAX);
     OUTPUT_DISTRIBUTION = reader.GetBoolean("","OUTPUT_DISTRIBUTION",OUTPUT_DISTRIBUTION);
+    OUTPUT_ACTIVATION = reader.GetBoolean("","OUTPUT_ACTIVATION",OUTPUT_ACTIVATION);
+    ALPHA = reader.GetReal("","ALPHA",ALPHA);
+    USE_BLOOD_ADJUST = reader.GetBoolean("","USE_BLOOD_ADJUST",USE_BLOOD_ADJUST);
+
 
 	if( SEED < 0 ){
 		rng.SetState( time( NULL ), getpid() );
 	} else {
 		rng.SetState( SEED, 12345 );
 	}
-
-   //boost::gamma_distribution <double> gamma_dist = boost::gamma_distribution<double> ( GAMMA_K );
-   // bind random number generator to distribution, forming a function
-   //boost::variate_generator<boost::mt19937&, boost::gamma_distribution<double> > activation_sampler( rng, gamma_dist );
 
    int ** cell_distribution;
 	
@@ -152,7 +157,8 @@ int main( int argc, char ** argv ){
                }
 
                // determine time step
-               delta_t = log(1./s01())/(RHO_SPLEEN + rho_dln + rho_ndln); 
+               delta_t = log(1./s01())/(RHO_SPLEEN + rho_dln + rho_ndln);
+               if( USE_BLOOD_ADJUST ) delta_t /= blood_adjust(t); 
 
                break;
 
@@ -229,10 +235,10 @@ int main( int argc, char ** argv ){
    }
 	if( OUTPUT_DISTRIBUTION ){
 		for( int i = 0 ; i < T_MAX ; i ++ ){
-			cout << i/24. << " " << cell_distribution[0][i] << " " 
-				<< cell_distribution[1][i] << " " 
-				<< cell_distribution[2][i] << " " 
-				<< cell_distribution[3][i] << endl;
+			cout << i/24. << " " << cell_distribution[IN_BLOOD][i] << " " 
+				<< cell_distribution[IN_SPLEEN][i] << " " 
+				<< cell_distribution[IN_LN][i] << " " 
+				<< cell_distribution[IN_DLN][i] << endl;
 		}
 	}
 }
